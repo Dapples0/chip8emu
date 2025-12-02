@@ -4,12 +4,12 @@
 class Chip8 {
     public:
         void intialise();
-        void load();
+        void load(const char *filename);
         void emulateCycle();
         void updateGraphics();
         void storeKey();
 
-        unsigned gfx[64 * 32];
+        unsigned gfx[64 * 32]; // 2048
         unsigned char key[16];
 
     private:
