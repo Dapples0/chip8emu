@@ -1,6 +1,7 @@
 #include "Chip8.h"
 
 void Chip8::intialise() {
+    pc = 0x200;
 }
 
 
