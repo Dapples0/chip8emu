@@ -1,4 +1,5 @@
 #include "Chip8.h"
+#include "constants.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -39,7 +40,7 @@ void Chip8::load(const char *filename) {
     FILE *fp = fopen(filename, "rb");
 
     if (fp == NULL) {
-        cerr << "Bad ROM";
+        cerr << "Bad ROM\n";
         exit(-1);
     }
 
@@ -53,13 +54,13 @@ void Chip8::load(const char *filename) {
     size_t res = fread(buffer, sizeof(char), fileSize, fp);
 
     if (res != (size_t)fileSize) {
-        cerr << "Bad ROM";
+        cerr << "Bad ROM\n";
         exit(-1);
     }
 
     cout << res;
     if (res > (4096 - 512)) {
-        cerr << "ROM too big";
+        cerr << "ROM too big\n";
         exit(-1);
     }
 
@@ -72,7 +73,7 @@ void Chip8::load(const char *filename) {
     
 }
 
-void Chip8::emulateCycle() {
+void Chip8::emulateCycle(SDL_Renderer *renderer, SDL_Texture *texture) {
 
     return;
 }
