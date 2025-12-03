@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
         }
 
         chip8.emulateCycle(display.getRenderer(), display.getTexture());
+        break;
     }
 
 

@@ -1,5 +1,4 @@
 #include "Window.h"
-#include "constants.h"
 #include <SDL2/SDL_video.h>
 
 #include <iostream>

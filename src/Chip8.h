@@ -21,6 +21,7 @@ class Chip8 {
         uint8_t key[MAX_SIZE];
 
     private:
+        void executeOperation(unsigned short opcode, uint8_t vX, uint8_t vY, uint8_t n, uint8_t nn, uint8_t nnn);
         unsigned short opcode;
         unsigned char memory[MEMORY_SIZE];
         unsigned char registerV[MAX_SIZE];
