@@ -1,13 +1,14 @@
 #pragma once
 #include <cstdint>
 #include "constants.h"
+#include "Display.h"
 #include <SDL2/SDL.h>
 
 class Chip8 {
     public:
         void initialise();
         void load(const char *filename);
-        void emulateCycle(SDL_Renderer *renderer, SDL_Texture *texture);
+        void emulateCycle(Display &display);
         void updateGraphics();
         void storeKey();
 
@@ -21,17 +22,19 @@ class Chip8 {
         uint8_t key[MAX_SIZE];
 
     private:
-        void executeOperation(unsigned short opcode, uint8_t vX, uint8_t vY, uint8_t n, uint8_t nn, uint8_t nnn);
-        unsigned short opcode;
+        void executeOperation(uint8_t vX, uint8_t vY, uint8_t n, uint8_t nn, uint8_t nnn, Display &display);
+        void clearDisplay();
+        uint8_t randGen();
+        uint16_t opcode;
         unsigned char memory[MEMORY_SIZE];
-        unsigned char registerV[MAX_SIZE];
-        unsigned short I;
-        unsigned short pc;
-        unsigned char delay_timer;
-        unsigned char sound_timer;
-        unsigned short stack[MAX_SIZE];
-        unsigned short stackPointer;
-        unsigned char font[FONT_SIZE] = {
+        uint8_t registerV[MAX_SIZE];
+        uint16_t I;
+        uint16_t pc;
+        uint8_t delay_timer;
+        uint8_t sound_timer;
+        uint16_t stack[MAX_SIZE];
+        uint8_t sp;
+        uint8_t font[FONT_SIZE] = {
             0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
             0x20, 0x60, 0x20, 0x20, 0x70, // 1
             0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
