@@ -8,26 +8,20 @@ using namespace std;
 
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
-        cerr << "usage: main.cpp chip8\n";
-        cerr << argc << "\n";
-        return 1;
-    }
 
     Chip8 chip8;
-    chip8.initialise();
-    chip8.load(argv[1]);
+    chip8.load("testroms/1-chip8-logo.ch8");
 
 
 
     // Command Loop
-    bool exit = false;
-    while (!exit) {
-        // this_thread::sleep_for(std::chrono::microseconds(1200));
-        chip8.emulateCycle();
+    // bool exit = false;
+    // while (!exit) {
+    //     // this_thread::sleep_for(std::chrono::microseconds(1200));
+    //     chip8.emulateCycle();
 
 
-    }
+    // }
 
 
 }

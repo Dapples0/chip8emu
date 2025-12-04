@@ -1,4 +1,6 @@
 #include "Chip8.h"
+#include <fstream>
+#include <iterator>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -7,40 +9,64 @@
 #include <iostream>
 using namespace std;
 
-void Chip8::initialise() {
+Chip8::Chip8() {
     pc = 0x200;
     opcode = 0;
     I = 0;
     sp = 0;
-
-    // Clear display D:
-    clearDisplay();
-
-    for (int i = 0; i < MAX_SIZE; ++i) {
-        stack[i] = 0;
-        registerV[i] = 0;
-        key[i] = 0;
-    }
-
-    for (int i = 0; i < MEMORY_SIZE; ++i) {
-        memory[i] = 0;
-    }
-
-    // Load font into memory
-    for (int i = 0; i < FONT_SIZE; ++i) {
-        memory[i + FONT_START_ADDRESS] = font[i];
-    }
-
     delay_timer = 0;
     sound_timer = 0;
 
+    font = {
+        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+        0x20, 0x60, 0x20, 0x20, 0x70, // 1
+        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+        0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+    };
+
+    keymap = {
+        SDLK_1, SDLK_2, SDLK_3, SDLK_4,
+        SDLK_q, SDLK_w, SDLK_e, SDLK_r,
+        SDLK_a, SDLK_s, SDLK_d, SDLK_f,
+        SDLK_z, SDLK_x, SDLK_c, SDLK_v,
+    }; 
+    // Clear display D:
+    clearDisplay();
+
+    // Initialises stack, registers, and key
+    for (int i = 0; i < MAX_SIZE; ++i) {
+        stack[i] = 0;
+        registerV[i] = 0;
+        // key[i] = 0; // May want to uncomment this
+    }
+
+    // Sets all elements to 0
+    memory.fill(0);
+
+
+    // Load font into memory
+    copy(font.begin(), font.end(), memory.begin());
+    
 }
+
+Chip8::~Chip8() {}
 
 
 void Chip8::load(const char *filename) {
-
     FILE *fp = fopen(filename, "rb");
-
+    
     if (fp == NULL) {
         cerr << "Bad ROM\n";
         exit(-1);
@@ -52,44 +78,42 @@ void Chip8::load(const char *filename) {
     rewind(fp);
 
     char *buffer = (char*)malloc(sizeof(char) * fileSize);
-
+    
     size_t res = fread(buffer, sizeof(char), fileSize, fp);
-
     if (res != (size_t)fileSize) {
         cerr << "Bad ROM\n";
         exit(-1);
     }
 
-    if (res > (4096 - 512)) {
-        cerr << "ROM too big\n";
-        exit(-1);
+	if((4096-512) > fileSize) {
+		for(int i = 0; i < fileSize; ++i)
+			memory[i + 512] = buffer[i];
+	}
+	else {
+        cerr << "Rom too big\n";
     }
 
-    for (int i = 0; i < (4096 - 512); ++i) {
-        memory[i + 512] = buffer[i];
-    }
+	
+	fclose(fp);
+	free(buffer);
 
-    fclose(fp);
-    free(buffer);
-    
 }
 
 void Chip8::emulateCycle() {
     opcode = memory[pc] << 8 | memory[pc + 1];
-    I = opcode & 0x0FFF;
     // Extract operations
-    uint8_t vX = (opcode & 0x0F00u) >> 8;
-    uint8_t vY = (opcode & 0x00F0u) >> 4;
-    uint8_t nnn = (opcode & 0x0FFFu);
-    uint8_t nn = (opcode & 0x00FFu); // same as kk
-    uint8_t n = (opcode & 0x000Fu); // n is height
+    uint8_t vX = (opcode & 0x0F00) >> 8;
+    uint8_t vY = (opcode & 0x00F0) >> 4;
+    uint8_t nnn = (opcode & 0x0FFF);
+    uint8_t nn = (opcode & 0x00FF); // same as kk
+    uint8_t n = (opcode & 0x000F); // n is height
 
     pc += 2;
     // executeOperation(vX, vY, n, nn, nnn, display);
 
-    switch (opcode & 0xF000u) {
+    switch (opcode & 0xF000) {
         case 0x0000:
-            switch (opcode & 0x000Fu) {
+            switch (opcode & 0x000F) {
                 case 0x0000: // 00E0 - Clears the screen
                     clearDisplay();
                 break;
@@ -129,11 +153,13 @@ void Chip8::emulateCycle() {
         case 0x6000: // 6XNN - Sets vX to NN
             registerV[vX] = nn;
         break;
+
         case 0x7000: // 7XNN - Adds NN to vX *carry flag is not changed)
             registerV[vX] += nn;
         break;
+
         case 0x8000:
-            switch (opcode & 0x000Fu) {
+            switch (opcode & 0x000F) {
                 case 0x0000: // 8XY0 - sets vX to the value of vY
                     registerV[vX] = registerV[vY];
                 break;
@@ -151,37 +177,39 @@ void Chip8::emulateCycle() {
                 break;
 
                 case 0x0004: // 8XY4 - Adds vY to vX. VF is set to 1 when there's an overflow, and to 0 when there is not
-                    registerV[vX] += registerV[vY];
+                {
+                    uint16_t res = registerV[vX] += registerV[vY];
 
-                    if (registerV[vX] > 255) {
+                    if (res > 255) {
                         registerV[MAX_SIZE - 1] = 1;
                     } else {
                         registerV[MAX_SIZE - 1] = 0;
                     }
 
-                    registerV[vX] &= 0xFFu;
+                    registerV[vX] = res & 0xFF;
+                }
                 break;
                 case 0x0005: // 8XY4 - Subtracts vY from vX. VF is set to 0 when there's an underflow, and to 1 when there is not
-                    if (registerV[vX] >= registerV[vY]) {
-                        registerV[MAX_SIZE - 1] = 1;
-                    } else {
+                    if (registerV[vY] > registerV[vX]) {
                         registerV[MAX_SIZE - 1] = 0;
+                    } else {
+                        registerV[MAX_SIZE - 1] = 1;
                     }
                     registerV[vX] -= registerV[vY];
                 break;
 
                 case 0x0006: // 8XY6 - Shifts vX to the right by 1, then stores the least significant bit of vX prior to the shift into VF
-                    registerV[MAX_SIZE - 1] = registerV[vX] & 0x1u;
+                    registerV[MAX_SIZE - 1] = (registerV[vX] & 0x1);
 
                     registerV[vX] >>= 1;
 
                 break;
                 
                 case 0x0007: // 8XY7 - Sets vX to vY minus vX. VF is set to 0 when there's an underflow, and 1 when there is not
-                    if (registerV[vY] >= registerV[vX]) {
-                        registerV[MAX_SIZE - 1] = 1;
-                    } else {
+                    if (registerV[vX] > registerV[vY]) {
                         registerV[MAX_SIZE - 1] = 0;
+                    } else {
+                        registerV[MAX_SIZE - 1] = 1;
                     }
             
                     registerV[vX] = registerV[vY] - registerV[vX];        
@@ -215,30 +243,23 @@ void Chip8::emulateCycle() {
 
         case 0xD000: // DXYN - Draws a sprite at (vX, vY) with a width of 8 pixels and height of N pixels. VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that does not happen
             {
-            uint8_t xPos = registerV[vX] % WIDTH;
-            uint8_t yPos = registerV[vY] % HEIGHT;
             registerV[MAX_SIZE - 1] = 0;
 
-            for (unsigned int row = 0; row < n; ++row)
-            {
-                uint8_t spriteByte = memory[I + row];
-
-                for (unsigned int col = 0; col < 8; ++col)
-                {
-                    uint8_t spritePixel = spriteByte & (0x80u >> col);
-                    uint32_t* screenPixel = &gfx[(yPos + row) * WIDTH + (xPos + col)];
-
-                    if (spritePixel)
-                    {
-                        if (*screenPixel == 0xFFFFFFFF)
-                        {
-                            registerV[0xF] = 1;
+            for (int row = 0; row < n; ++row) {
+                for (int col = 0; col < 8; ++col) {
+                    uint8_t pixel = (memory[I + row] & (0x80 >> col)) != 0;
+                    if (pixel) {
+                        int pos = (registerV[vX] + col) % WIDTH + ((registerV[vY] + row) % HEIGHT) * WIDTH;
+                        if (gfx[pos] == 0xFFFFFFFF) { // Collision detection
+                            registerV[MAX_SIZE - 1] = 1;
+                            gfx[pos] = 0xFF000000;
+                        } else {
+                            gfx[pos] = 0xFFFFFFFF;
                         }
-
-                        *screenPixel ^= 0xFFFFFFFF;
                     }
                 }
             }
+            // draw here
 
             }
 
@@ -276,7 +297,7 @@ void Chip8::emulateCycle() {
                     }
 
                     if (!keyPress) {
-                        pc -= 2;
+                        // pc -= 2;
                         return;
                     }
                     }
@@ -296,23 +317,27 @@ void Chip8::emulateCycle() {
                 break;
 
                 case 0x0029: // FX29 - Sets I to the location of the sprite for the charactrer in vX
-                    I = FONT_START_ADDRESS + (5 * registerV[vX]);
+                    // I = FONT_START_ADDRESS + (5 * registerV[vX]);
+                    I = 5 * registerV[vX];
                 break;
 
                 case 0x0033: // FX33 - Stores the binary-coded decimal representation of vX, with the hundreds digit in memory location in I, the tens digit at location I + 1, and the ones digit at location I + 2
-                    {
-                    uint8_t bcd = registerV[vX];
-                
-                    memory[I + 2] = bcd % 10;
-                    bcd /= 10;
-
-                    memory[I + 1] = bcd % 10;
-                    bcd /= 10;
-
-                    memory[I] = bcd % 10;                        
-                    }    
-
+                    // {
                     
+                    // uint8_t bcd = registerV[vX];
+                
+                    // memory[I + 2] = bcd % 10;
+                    // bcd /= 10;
+
+                    // memory[I + 1] = bcd % 10;
+                    // bcd /= 10;
+
+                    // memory[I] = bcd % 10;                        
+                    // }    
+                    memory[I] = registerV[vX] / 100;
+                    memory[I + 1] = (registerV[vX]  / 10) % 10;
+                    memory[I + 2] = registerV[vX]  % 10;
+                                
                 break;
 
                 case 0x0055: // FX55 - Stores from v0 to vX (inclusive) in memory, starting at address I. The offset from I is increased by 1 for each value written, but I is left unmodified
@@ -325,6 +350,7 @@ void Chip8::emulateCycle() {
                     for (int i = 0; i < vX; ++i) {
                         registerV[i] = memory[I + i];
                     }
+                    I += vX + 1;
 
                 break;
             }       
@@ -605,9 +631,9 @@ void Chip8::executeOperation(uint8_t vX, uint8_t vY, uint8_t n, uint8_t nn, uint
 
 void Chip8::clearDisplay() {
     // Clear screen
-    for (int i = 0; i < WIDTH * HEIGHT; ++i) {
-        gfx[i] = 0;
-    }
+    // for (int i = 0; i < WIDTH * HEIGHT; ++i) {
+    //     gfx[i] = 0;
+    // }
  
 }
 
