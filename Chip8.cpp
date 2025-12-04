@@ -260,7 +260,6 @@ void Chip8::emulateCycle() {
                 }
             }
             // draw here
-
             }
 
 

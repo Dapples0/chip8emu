@@ -16,7 +16,7 @@ class Chip8 {
         
         std::array<uint8_t, MAX_SIZE> keymap;
         uint8_t key[MAX_SIZE];
-
+        uint32_t gfx[WIDTH* HEIGHT] = {}; // 2048
     private:
         void executeOperation(uint8_t vX, uint8_t vY, uint8_t n, uint8_t nn, uint8_t nnn);
         void clearDisplay();
@@ -31,7 +31,7 @@ class Chip8 {
         uint16_t stack[MAX_SIZE];
         uint8_t sp;
         std::array<uint8_t, FONT_SIZE> font;
-        uint32_t gfx[WIDTH* HEIGHT] = {}; // 2048
+        
 
 };
 
