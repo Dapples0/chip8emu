@@ -38,16 +38,10 @@ Display::~Display() {
 
 }
 
-void Display::draw(uint32_t pixels[WIDTH*SCALE]) {
-    SDL_UpdateTexture(texture,
-                NULL,
-                pixels,
-                WIDTH*sizeof(uint32_t));
+void Display::draw(uint32_t pixels[WIDTH * SCALE]) {
+    SDL_UpdateTexture(texture, NULL, pixels, WIDTH*sizeof(uint32_t));
     SDL_RenderClear(renderer);
 
-    SDL_RenderCopy(renderer,
-                texture,
-                NULL,
-                NULL);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
 }

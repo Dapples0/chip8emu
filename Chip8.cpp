@@ -10,6 +10,7 @@
 using namespace std;
 
 Chip8::Chip8() {
+    // Initialise values
     pc = 0x200;
     I = 0;
     sp = 0;
@@ -41,6 +42,7 @@ Chip8::Chip8() {
         SDLK_a, SDLK_s, SDLK_d, SDLK_f,
         SDLK_z, SDLK_x, SDLK_c, SDLK_v,
     }; 
+
     // Clear display D:
     clearDisplay();
 
@@ -65,6 +67,7 @@ Chip8::~Chip8() {}
 
 void Chip8::load(const char *filename) {
     FILE *fp = fopen(filename, "rb");
+
     if (fp == NULL) {
         cerr << "Bad ROM\n";
         exit(-1);
@@ -83,6 +86,7 @@ void Chip8::load(const char *filename) {
         exit(-1);
     }
 
+    // Moves buffer into memory
 	if((4096-512) > fileSize) {
 		for(int i = 0; i < fileSize; ++i)
 			memory[i + 512] = buffer[i];
@@ -98,7 +102,9 @@ void Chip8::load(const char *filename) {
 }
 
 void Chip8::emulateCycle() {
+    // Extract opcode
     uint16_t opcode = memory[pc] << 8 | memory[pc + 1];
+
     // Extract operations
     uint8_t vX = (opcode & 0x0F00) >> 8;
     uint8_t vY = (opcode & 0x00F0) >> 4;
@@ -106,7 +112,7 @@ void Chip8::emulateCycle() {
     uint8_t nn = opcode & 0x0FF; // same as kk
     uint8_t n = opcode & 0x0F; // height
 
-    
+    // Increment program counter
     pc += 2;
 
     switch (opcode & 0xF000) {
@@ -202,9 +208,7 @@ void Chip8::emulateCycle() {
                         registerV[0xF] = 1;
                     }                        
                 }
-
-                    
-                    
+    
                 break;
 
                 case 0x0006: // 8XY6 - Shifts vX to the right by 1, then stores the least significant bit of vX prior to the shift into VF
@@ -215,7 +219,6 @@ void Chip8::emulateCycle() {
                 }    
 
                     
-
                 break;
                 
                 case 0x0007: // 8XY7 - Sets vX to vY minus vX. VF is set to 0 when there's an underflow, and 1 when there is not
@@ -365,6 +368,7 @@ void Chip8::emulateCycle() {
         default:
         break;
     }
+
     if (delay_timer > 0) {
         --delay_timer;
     }
@@ -383,6 +387,7 @@ void Chip8::clearDisplay() {
  
 }
 
+// Generates random uint8_t number from 0 to 255 (inclusive)
 uint8_t Chip8::randGen() {
     random_device rd;
     mt19937 gen(rd());

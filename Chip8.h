@@ -10,14 +10,17 @@ class Chip8 {
         ~Chip8();
         void load(const char *filename);
         void emulateCycle();
-
         
+        // Keypad
         std::array<uint8_t, MAX_SIZE> keymap;
         uint8_t key[MAX_SIZE];
+
+        // Screen graphics
         uint32_t gfx[WIDTH* HEIGHT] = {}; // 2048
     private:
-        void executeOperation(uint8_t vX, uint8_t vY, uint8_t n, uint8_t nn, uint8_t nnn);
         void clearDisplay();
+
+        // chip8 standard variables
         uint8_t randGen();
         std::array<uint8_t, MEMORY_SIZE> memory;
         uint8_t registerV[MAX_SIZE] = {};
