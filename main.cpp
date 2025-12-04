@@ -11,17 +11,19 @@ using namespace std;
 int main(void) {
 
     Chip8 chip8;
-    chip8.load("testroms/3-corax+.ch8");
+    chip8.load("testroms/4-flags.ch8");
+    // 3-corax+.ch8 4-flags.ch8 5-quirks.ch8 6-keypad.ch8 Pong (1 player) (1).ch8 Tetris [Fran Dachille, 1991].ch8
     Display display;
 
     // Command Loop
-    Uint32 start;
-    while (true) {
-        start = SDL_GetTicks();
+    Uint32 start_time = SDL_GetTicks();
+    bool running = true;
+    while (running) {
+        Uint32 cycleTime = SDL_GetTicks();
         SDL_Event event;
         if (SDL_PollEvent(&event)) {
             if(event.type == SDL_QUIT) {
-                break;
+                running = false;
             }
             if (event.type == SDL_KEYDOWN) {
                 for (int i = 0; i < MAX_SIZE; i++)
@@ -42,7 +44,8 @@ int main(void) {
         chip8.emulateCycle();
 
         display.draw(chip8.gfx);
-        this_thread::sleep_for(std::chrono::microseconds(2400));
+
+        this_thread::sleep_for(std::chrono::microseconds(3000));
     }
 
 

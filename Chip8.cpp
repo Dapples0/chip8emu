@@ -48,7 +48,7 @@ Chip8::Chip8() {
     for (int i = 0; i < MAX_SIZE; ++i) {
         stack[i] = 0;
         registerV[i] = 0;
-        // key[i] = 0; // May want to uncomment this
+        key[i] = 0;
     }
 
     // Sets all elements to 0
@@ -137,12 +137,12 @@ void Chip8::emulateCycle() {
             }
         break;
         
-        case 0x4000: // Skips the next instruction if vX does not equal NN
+        case 0x4000: // 4XNN - Skips the next instruction if vX does not equal NN
             if (registerV[vX] != nn) {
                 pc += 2;
             }
         break;
-        case 0x5000: // Skips the next instruction if vX equals vY
+        case 0x5000: // 5XY0 - Skips the next instruction if vX equals vY
             if (registerV[vX] == registerV[vY]) {
                 pc += 2;
             }
@@ -164,58 +164,80 @@ void Chip8::emulateCycle() {
                 case 0x0001: // 8XY1 - sets vX to vX OR vY 
                     registerV[vX] = (registerV[vX] | registerV[vY]);
 
+                    // registerV[0xF] = 0;
                 break;
 
                 case 0x0002: // 8XY2 - sets vX to vX AND xY
                     registerV[vX] = (registerV[vX] & registerV[vY]);
+
+                    // registerV[0xF] = 0;
                 break;
 
                 case 0x0003: // 8XY3 -  sets vX to vX XOR vY
                     registerV[vX] = (registerV[vX] ^ registerV[vY]);
+
+                    // registerV[0xF] = 0;
                 break;
 
                 case 0x0004: // 8XY4 - Adds vY to vX. VF is set to 1 when there's an overflow, and to 0 when there is not
                 {
-                    uint16_t res = registerV[vX] += registerV[vY];
+                    uint16_t res = registerV[vX] + registerV[vY];
 
-                    if (res > 255) {
-                        registerV[MAX_SIZE - 1] = 1;
+                    registerV[vX] = res & 0xFFu;
+
+                    if (res > 255u) {
+                        registerV[0xF] = 1;
                     } else {
-                        registerV[MAX_SIZE - 1] = 0;
+                        registerV[0xF] = 0;
                     }
-
-                    registerV[vX] = res & 0xFF;
                 }
                 break;
                 case 0x0005: // 8XY4 - Subtracts vY from vX. VF is set to 0 when there's an underflow, and to 1 when there is not
-                    if (registerV[vY] > registerV[vX]) {
-                        registerV[MAX_SIZE - 1] = 0;
-                    } else {
-                        registerV[MAX_SIZE - 1] = 1;
-                    }
+                {
+                    bool equality = registerV[vY] > registerV[vX];
                     registerV[vX] -= registerV[vY];
+                    if (equality) {
+                        registerV[0xF] = 0;
+                    } else {
+                        registerV[0xF] = 1;
+                    }                        
+                }
+
+                    
+                    
                 break;
 
                 case 0x0006: // 8XY6 - Shifts vX to the right by 1, then stores the least significant bit of vX prior to the shift into VF
-                    registerV[MAX_SIZE - 1] = (registerV[vX] & 0x1);
-
+                {
+                    uint8_t lsb = registerV[vX] & 0x1;
                     registerV[vX] >>= 1;
+                    registerV[0xF] = lsb;                    
+                }    
+
+                    
 
                 break;
                 
                 case 0x0007: // 8XY7 - Sets vX to vY minus vX. VF is set to 0 when there's an underflow, and 1 when there is not
-                    if (registerV[vX] > registerV[vY]) {
-                        registerV[MAX_SIZE - 1] = 0;
+                {
+                    bool equality = registerV[vX] > registerV[vY];
+                    registerV[vX] = registerV[vY] - registerV[vX];
+                    if (equality) {
+                        registerV[0xF] = 0;
                     } else {
-                        registerV[MAX_SIZE - 1] = 1;
+                        registerV[0xF] = 1;
                     }
-            
-                    registerV[vX] = registerV[vY] - registerV[vX];        
+                                    
+                }
+
+                            
                 break;
                 
                 case 0x000E: // 8XYE - Shifts vX to the left by 1, then sets VF to 1 if the most significant bit of vX prior to that shift was set, or to 0 if it was unset
-                    registerV[MAX_SIZE - 1] = (registerV[vX] & 0x80) >> 7;
+                    uint8_t msb = (registerV[vX] & 0x80) >> 7;
                     registerV[vX] <<= 1;
+                    registerV[0xF] = msb;
+                    
                 break;
 
             }
@@ -240,16 +262,15 @@ void Chip8::emulateCycle() {
         break;
 
         case 0xD000: // DXYN - Draws a sprite at (vX, vY) with a width of 8 pixels and height of N pixels. VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that does not happen
-            {
-            registerV[MAX_SIZE - 1] = 0;
-
+        {
+            registerV[0xF] = 0;
             for (int row = 0; row < n; ++row) {
                 for (int col = 0; col < 8; ++col) {
                     uint8_t pixel = (memory[I + row] & (0x80 >> col)) != 0;
                     if (pixel) {
                         int pos = (registerV[vX] + col) % WIDTH + ((registerV[vY] + row) % HEIGHT) * WIDTH;
                         if (gfx[pos] == 0xFFFFFFFF) { // Collision detection
-                            registerV[MAX_SIZE - 1] = 1;
+                            registerV[0xF] = 1;
                             gfx[pos] = 0xFF000000;
                         } else {
                             gfx[pos] = 0xFFFFFFFF;
@@ -257,7 +278,7 @@ void Chip8::emulateCycle() {
                     }
                 }
             }
-            }
+        }
 
 
         break;
@@ -283,7 +304,7 @@ void Chip8::emulateCycle() {
                 break;
 
                 case 0x000A: // FX0A - A key press is awaited, and then stored in vX
-                    {
+                {
                     bool keyPress = false;
                     for (int i = 0; i < MAX_SIZE; ++i) {
                         if (key[i] != 0) {
@@ -293,10 +314,10 @@ void Chip8::emulateCycle() {
                     }
 
                     if (!keyPress) {
-                        // pc -= 2;
+                        pc -= 2;
                         return;
                     }
-                    }
+                }
 
                 break;
 
@@ -320,18 +341,19 @@ void Chip8::emulateCycle() {
                 case 0x0033: // FX33 - Stores the binary-coded decimal representation of vX, with the hundreds digit in memory location in I, the tens digit at location I + 1, and the ones digit at location I + 2  
                     memory[I] = registerV[vX] / 100;
                     memory[I + 1] = (registerV[vX]  / 10) % 10;
-                    memory[I + 2] = registerV[vX]  % 10;
+                    memory[I + 2] = registerV[vX] % 10;
                                 
                 break;
 
                 case 0x0055: // FX55 - Stores from v0 to vX (inclusive) in memory, starting at address I. The offset from I is increased by 1 for each value written, but I is left unmodified
-                    for (int i = 0; i < vX; ++i) {
+                    for (uint8_t i = 0; i <= vX; ++i) {
                         memory[I + i] = registerV[i];
                     }
+                    I += vX + 1;
                 break;
 
                 case 0x0065: // FX65 - Fills from v0 to vX (inclusive) with values from memory, starting at address I. The offset from I is increased by 1 for each value read, but I is left unmodified
-                    for (int i = 0; i < vX; ++i) {
+                    for (uint8_t i = 0; i <= vX; ++i) {
                         registerV[i] = memory[I + i];
                     }
                     I += vX + 1;
@@ -343,7 +365,6 @@ void Chip8::emulateCycle() {
         default:
         break;
     }
-    // Do delays here
     if (delay_timer > 0) {
         --delay_timer;
     }
