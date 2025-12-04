@@ -70,7 +70,7 @@ void Chip8::load(const char *filename) {
 
     if (fp == NULL) {
         cerr << "Bad ROM\n";
-        exit(-1);
+        exit(1);
     }
 
     // Get file size
@@ -83,7 +83,7 @@ void Chip8::load(const char *filename) {
     size_t res = fread(buffer, sizeof(char), fileSize, fp);
     if (res != (size_t)fileSize) {
         cerr << "Bad ROM\n";
-        exit(-1);
+        exit(1);
     }
 
     // Moves buffer into memory
@@ -93,6 +93,7 @@ void Chip8::load(const char *filename) {
 	}
 	else {
         cerr << "Rom too big\n";
+        exit(1);
     }
 
 	
