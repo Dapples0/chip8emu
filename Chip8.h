@@ -10,8 +10,6 @@ class Chip8 {
         ~Chip8();
         void load(const char *filename);
         void emulateCycle();
-        void updateGraphics();
-        void storeKey();
 
         
         std::array<uint8_t, MAX_SIZE> keymap;
@@ -21,7 +19,6 @@ class Chip8 {
         void executeOperation(uint8_t vX, uint8_t vY, uint8_t n, uint8_t nn, uint8_t nnn);
         void clearDisplay();
         uint8_t randGen();
-        uint16_t opcode;
         std::array<uint8_t, MEMORY_SIZE> memory;
         uint8_t registerV[MAX_SIZE] = {};
         uint16_t I;

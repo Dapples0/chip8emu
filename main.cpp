@@ -8,17 +8,15 @@ using namespace std;
 #include <thread>
 
 
-int main(int argc, char **argv) {
+int main(void) {
 
     Chip8 chip8;
-    chip8.load("testroms/1-chip8-logo.ch8");
+    chip8.load("testroms/3-corax+.ch8");
     Display display;
 
-
     // Command Loop
-    bool exit = false;
     Uint32 start;
-    while (!exit) {
+    while (true) {
         start = SDL_GetTicks();
         SDL_Event event;
         if (SDL_PollEvent(&event)) {
@@ -40,10 +38,14 @@ int main(int argc, char **argv) {
                 }
             }
         }
-        // this_thread::sleep_for(std::chrono::microseconds(1200));
+
         chip8.emulateCycle();
+
         display.draw(chip8.gfx);
+        this_thread::sleep_for(std::chrono::microseconds(2400));
     }
+
+
 
 
 }
