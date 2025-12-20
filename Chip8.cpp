@@ -122,7 +122,7 @@ void Chip8::emulateCycle() {
                 case 0x0000: // 00E0 - Clears the screen
                     clearDisplay();
                 break;
-                case 0x000E: // Returns from subrotinez
+                case 0x000E: // Returns from subroutine
                     --sp;
                     pc = stack[sp];
                 break;
